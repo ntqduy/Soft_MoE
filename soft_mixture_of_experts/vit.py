@@ -111,12 +111,13 @@ class ViTWrapper(nn.Module):
         # x: [B, 3, H, W]
         x = self.patch_embed(x)    # vẫn [B, d_model, H/ps, W/ps]
         x = x + self.pos_conv(x)   # vẫn [B, d_model, H/ps, W/ps]
-        x = rearrange(
-            x,
-            "b c (h p1) (w p2) -> b (h w) (p1 p2 c)",
-            p1=self.patch_size,
-            p2=self.patch_size,
-        )
+        #x = rearrange(
+        #    x,
+        #    "b c (h p1) (w p2) -> b (h w) (p1 p2 c)",
+        #    p1=self.patch_size,
+        #    p2=self.patch_size,
+        #)
+        x = rearrange(x, "b d h w -> b (h w) d")
         x = self.dropout(x)
         x = self.encoder(x)
 
