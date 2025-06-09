@@ -89,14 +89,15 @@ class ViTWrapper(nn.Module):
                 f"Expected image_size={self.image_size} but found {x.size(2)}x{x.size(3)}"
             )
 
+
+        #x = self.patch_to_embedding(x)
+        x = self.conv2d(x)
         x = rearrange(
             x,
             "b c (h p1) (w p2) -> b (h w) (p1 p2 c)",
             p1=self.patch_size,
             p2=self.patch_size,
         )
-        #x = self.patch_to_embedding(x)
-        x = self.conv2d(x)
         x = self.dropout(x)
         x = self.encoder(x)
 
