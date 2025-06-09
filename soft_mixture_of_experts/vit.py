@@ -49,9 +49,9 @@ class ViTWrapper(nn.Module):
             nn.Linear(patch_dim, d_model, device=device, dtype=dtype),
             nn.LayerNorm(d_model, device=device, dtype=dtype),
         )
-        self.pos_embedding = nn.Parameter(
-            torch.randn(1, num_patches, d_model, device=device, dtype=dtype)
-        )
+        # self.pos_embedding = nn.Parameter(
+        #     torch.randn(1, num_patches, d_model, device=device, dtype=dtype)
+        # )
         self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Sequential(
             nn.Linear(d_model, 128),
@@ -69,7 +69,7 @@ class ViTWrapper(nn.Module):
         self.out: nn.Module
         if num_classes is not None:
             #self.out = nn.Linear(d_model, num_classes, device=device, dtype=dtype)
-            self.out = self.classifier()
+            self.out = self.classifier
         else:
             self.out = nn.Identity()
     def _init_weights(self):
@@ -78,7 +78,7 @@ class ViTWrapper(nn.Module):
                 nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-                    
+
     def forward(self, x: Tensor, return_features: bool = False) -> Tensor:
         if not x.size(1) == self.num_channels:
             raise ValueError(
@@ -96,7 +96,7 @@ class ViTWrapper(nn.Module):
             p2=self.patch_size,
         )
         #x = self.patch_to_embedding(x)
-        x = self.conv(x)
+        x = self.conv2d(x)
         x = self.dropout(x)
         x = self.encoder(x)
 
