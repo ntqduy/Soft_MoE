@@ -43,12 +43,31 @@ class ViTWrapper(nn.Module):
         d_model = norm_layer.normalized_shape[0]
         num_patches = (image_size // patch_size) ** 2
         patch_dim = num_channels * patch_size**2
-        self.conv2d = nn.Conv2d(3, 768, kernel_size=(16, 16), stride=(16, 16))
-        self.patch_to_embedding = nn.Sequential(
-            nn.LayerNorm(patch_dim, device=device, dtype=dtype),
-            nn.Linear(patch_dim, d_model, device=device, dtype=dtype),
-            nn.LayerNorm(d_model, device=device, dtype=dtype),
+
+        self.patch_embed = nn.Conv2d(
+            in_channels=num_channels,
+            out_channels=d_model,
+            kernel_size=(patch_size, patch_size),
+            stride=(patch_size, patch_size),
+            device=device, dtype=dtype
         )
+
+        # 2) Conv2d depthwise để inject positional info
+        self.pos_conv = nn.Conv2d(
+            in_channels=d_model,
+            out_channels=d_model,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            groups=d_model,    # depthwise
+            bias=False,
+            device=device, dtype=dtype
+        )
+        # self.patch_to_embedding = nn.Sequential(
+        #     nn.LayerNorm(patch_dim, device=device, dtype=dtype),
+        #     nn.Linear(patch_dim, d_model, device=device, dtype=dtype),
+        #     nn.LayerNorm(d_model, device=device, dtype=dtype),
+        # )
         # self.pos_embedding = nn.Parameter(
         #     torch.randn(1, num_patches, d_model, device=device, dtype=dtype)
         # )
@@ -89,9 +108,9 @@ class ViTWrapper(nn.Module):
                 f"Expected image_size={self.image_size} but found {x.size(2)}x{x.size(3)}"
             )
 
-
-        #x = self.patch_to_embedding(x)
-        x = self.conv2d(x)
+        # x: [B, 3, H, W]
+        x = self.patch_embed(x)    # vẫn [B, d_model, H/ps, W/ps]
+        x = x + self.pos_conv(x)   # vẫn [B, d_model, H/ps, W/ps]
         x = rearrange(
             x,
             "b c (h p1) (w p2) -> b (h w) (p1 p2 c)",
